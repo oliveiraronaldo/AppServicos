@@ -34,19 +34,35 @@ function nomeMes(ym) {
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 // Valores guardados em centavos (inteiro) para não ter erro de arredondamento.
 const moeda = c => BRL.format((c || 0) / 100);
+// Retorna centavos, null (vazio = sem valor) ou NaN (inválido).
 function lerValor(txt) {
+  if (!String(txt).trim()) return null;
   let t = String(txt).replace(/[R$\s]/g, '');
   if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return NaN;
   return Math.round(parseFloat(t) * 100);
 }
 const somar = itens => itens.reduce((t, s) => t + (s.valor || 0), 0);
+// Formas de pagamento
+const PAGAMENTOS = { pix: 'Pix', dinheiro: 'Dinheiro', credito: 'Cartão de crédito', debito: 'Cartão de débito' };
+const MAX_PARCELAS = 12;
+function textoPagamento(s) {
+  if (!s.pagamento) return '';
+  const nome = PAGAMENTOS[s.pagamento] || s.pagamento;
+  return s.pagamento === 'credito' ? `${nome} ${s.parcelas || 1}x` : nome;
+}
 const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 /* ===== Elementos ===== */
 const $ = id => document.getElementById(id);
 const form = $('form'), editId = $('editId');
 const fData = $('data'), fCliente = $('cliente'), fEndereco = $('endereco'), fServico = $('servico'), fValor = $('valor');
+const fPagamento = $('pagamento'), fParcelas = $('parcelas'), boxParcelas = $('boxParcelas');
+fParcelas.innerHTML = Array.from({ length: MAX_PARCELAS }, (_, i) => `<option value="${i + 1}">${i + 1}x</option>`).join('');
+function atualizarParcelas() {
+  boxParcelas.hidden = fPagamento.value !== 'credito';
+}
+fPagamento.addEventListener('change', atualizarParcelas);
 const mesInput = $('mes'), busca = $('busca'), lista = $('lista'), resumo = $('resumo');
 
 function toast(msg) {
@@ -65,6 +81,7 @@ function limparForm() {
   $('formTitle').textContent = 'Novo serviço';
   $('btnSalvar').textContent = 'Salvar';
   $('btnCancelar').hidden = true;
+  atualizarParcelas();
 }
 
 form.addEventListener('submit', e => {
@@ -75,8 +92,10 @@ form.addEventListener('submit', e => {
     endereco: fEndereco.value.trim(),
     servico: fServico.value.trim(),
     valor: lerValor(fValor.value),
+    pagamento: fPagamento.value,
+    parcelas: fPagamento.value === 'credito' ? Number(fParcelas.value) : null,
   };
-  if (reg.valor === null) {
+  if (Number.isNaN(reg.valor)) {
     toast('Valor inválido. Ex.: 150 ou 150,50');
     fValor.focus();
     return;
@@ -108,6 +127,9 @@ function editar(id) {
   fEndereco.value = s.endereco;
   fServico.value = s.servico;
   fValor.value = s.valor != null ? (s.valor / 100).toFixed(2).replace('.', ',') : '';
+  fPagamento.value = s.pagamento || '';
+  fParcelas.value = String(s.parcelas || 1);
+  atualizarParcelas();
   $('formTitle').textContent = 'Editar serviço';
   $('btnSalvar').textContent = 'Atualizar';
   $('btnCancelar').hidden = false;
@@ -158,7 +180,7 @@ function render() {
         </div>
         <p class="item-end">📍 ${esc(s.endereco)}</p>
         <p class="item-serv">${esc(s.servico)}</p>
-        <p class="item-valor">${s.valor != null ? moeda(s.valor) : 'Sem valor'}</p>
+        ${s.valor != null || s.pagamento ? `<p class="item-valor">${s.valor != null ? moeda(s.valor) : ''}${s.pagamento ? ` <span class="item-pag">· ${esc(textoPagamento(s))}</span>` : ''}</p>` : ''}
         <div class="item-acoes">
           <button data-acao="editar" data-id="${s.id}">Editar</button>
           <button data-acao="excluir" data-id="${s.id}" class="del">Excluir</button>
@@ -200,6 +222,7 @@ $('btnPdf').addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
+  const AZUL = [31, 111, 235];
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
@@ -209,39 +232,91 @@ $('btnPdf').addEventListener('click', () => {
   doc.text(nomeMes(ym), 14, 25);
   doc.text(`Serviços: ${itens.length}   ·   Total: ${moeda(somar(itens))}`, W - 14, 25, { align: 'right' });
 
+  const rodape = () => {
+    const H = doc.internal.pageSize.getHeight();
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Gerado em ${dataBR(hojeISO())}`, 14, H - 8);
+    doc.text(`Página ${doc.internal.getNumberOfPages()}`, W - 14, H - 8, { align: 'right' });
+    doc.setTextColor(0);
+  };
+
   doc.autoTable({
     startY: 31,
-    head: [['Data', 'Cliente', 'Endereço', 'Serviço realizado', 'Valor']],
-    body: itens.map(s => [dataBR(s.data), s.cliente, s.endereco, s.servico, s.valor != null ? moeda(s.valor) : '-']),
-    foot: [[{ content: 'TOTAL DO MÊS', colSpan: 4, styles: { halign: 'right' } }, moeda(somar(itens))]],
+    head: [['Data', 'Cliente', 'Endereço', 'Serviço realizado', 'Pagamento', 'Valor']],
+    body: itens.map(s => [dataBR(s.data), s.cliente, s.endereco, s.servico, textoPagamento(s) || '-', s.valor != null ? moeda(s.valor) : '-']),
+    foot: [[{ content: 'TOTAL DO MÊS', colSpan: 5, styles: { halign: 'right' } }, moeda(somar(itens))]],
     showFoot: 'lastPage',
-    footStyles: { fillColor: [31, 111, 235], textColor: 255, fontStyle: 'bold' },
-    styles: { fontSize: 9, cellPadding: 2, valign: 'top', overflow: 'linebreak' },
-    headStyles: { fillColor: [31, 111, 235], textColor: 255 },
+    footStyles: { fillColor: AZUL, textColor: 255, fontStyle: 'bold' },
+    styles: { fontSize: 8.5, cellPadding: 1.8, valign: 'top', overflow: 'linebreak' },
+    headStyles: { fillColor: AZUL, textColor: 255 },
     alternateRowStyles: { fillColor: [244, 246, 249] },
-    columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 34 }, 2: { cellWidth: 46 }, 3: { cellWidth: 'auto' }, 4: { cellWidth: 26, halign: 'right' } },
-    margin: { left: 14, right: 14 },
-    didDrawPage: () => {
-      const H = doc.internal.pageSize.getHeight();
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text(`Gerado em ${dataBR(hojeISO())}`, 14, H - 8);
-      doc.text(`Página ${doc.internal.getNumberOfPages()}`, W - 14, H - 8, { align: 'right' });
-      doc.setTextColor(0);
+    columnStyles: {
+      0: { cellWidth: 19 }, 1: { cellWidth: 28 }, 2: { cellWidth: 36 },
+      3: { cellWidth: 'auto' }, 4: { cellWidth: 26 }, 5: { cellWidth: 24, halign: 'right' },
     },
+    margin: { left: 14, right: 14 },
+    didDrawPage: rodape,
   });
 
-  const nome = `servicos-${ym}.pdf`;
-  const blob = doc.output('blob');
-  const file = new File([blob], nome, { type: 'application/pdf' });
-  // No celular, abre o menu de compartilhar (WhatsApp, e-mail, salvar...). Senão, baixa.
+  // Resumo por forma de pagamento
+  const grupos = {};
+  for (const s of itens) {
+    const k = textoPagamento(s) || 'Não informado';
+    grupos[k] = grupos[k] || { qtd: 0, total: 0 };
+    grupos[k].qtd++;
+    grupos[k].total += s.valor || 0;
+  }
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 8,
+    head: [['Forma de pagamento', 'Serviços', 'Total']],
+    body: Object.entries(grupos).sort((a, b) => b[1].total - a[1].total)
+      .map(([k, g]) => [k, String(g.qtd), moeda(g.total)]),
+    styles: { fontSize: 9, cellPadding: 1.8 },
+    headStyles: { fillColor: AZUL, textColor: 255 },
+    columnStyles: { 1: { halign: 'center', cellWidth: 22 }, 2: { halign: 'right', cellWidth: 30 } },
+    tableWidth: 110,
+    margin: { left: 14, right: 14 },
+    rowPageBreak: 'avoid',
+    didDrawPage: rodape,
+  });
+
+  salvarArquivo(doc.output('blob'), `servicos-${ym}.pdf`, `Serviços - ${nomeMes(ym)}`);
+});
+
+/* ===== Salvar / compartilhar arquivos ===== */
+const nativo = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+function blobParaBase64(blob) {
+  return new Promise((ok, erro) => {
+    const r = new FileReader();
+    r.onload = () => ok(String(r.result).split(',')[1]);
+    r.onerror = erro;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function salvarArquivo(blob, nome, titulo) {
+  if (nativo) {
+    // App instalado (APK): grava o arquivo e abre o menu de compartilhar do Android.
+    try {
+      const cap = window.Capacitor;
+      const { uri } = await cap.nativePromise('Filesystem', 'writeFile', { path: nome, data: await blobParaBase64(blob), directory: 'CACHE' });
+      await cap.nativePromise('Share', 'share', { title: titulo, files: [uri], dialogTitle: titulo });
+    } catch (e) {
+      if (!/cancel/i.test(String(e && e.message))) toast('Não foi possível gerar o arquivo');
+    }
+    return;
+  }
+  const file = new File([blob], nome, { type: blob.type });
+  // No navegador do celular, abre o menu de compartilhar. Senão, baixa.
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator.share({ files: [file], title: `Serviços - ${nomeMes(ym)}` })
+    navigator.share({ files: [file], title: titulo })
       .catch(err => { if (err.name !== 'AbortError') baixar(blob, nome); });
   } else {
     baixar(blob, nome);
   }
-});
+}
 
 function baixar(blob, nome) {
   const url = URL.createObjectURL(blob);
@@ -256,8 +331,7 @@ $('btnMenu').addEventListener('click', () => $('menu').showModal());
 
 $('btnExport').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify({ app: 'meus-servicos', versao: 1, servicos }, null, 2)], { type: 'application/json' });
-  baixar(blob, `backup-servicos-${hojeISO()}.json`);
-  toast('Backup exportado');
+  salvarArquivo(blob, `backup-servicos-${hojeISO()}.json`, 'Backup Meus Serviços');
 });
 
 $('btnImport').addEventListener('click', () => $('fileImport').click());
@@ -274,7 +348,8 @@ $('fileImport').addEventListener('change', async e => {
     let novos = 0;
     for (const s of validos) {
       if (s.id && ids.has(s.id)) continue; // não duplica
-      servicos.push({ id: s.id || novoId(), data: s.data, cliente: String(s.cliente), endereco: String(s.endereco), servico: String(s.servico), valor: Number.isInteger(s.valor) ? s.valor : null, criadoEm: s.criadoEm });
+      servicos.push({ id: s.id || novoId(), data: s.data, cliente: String(s.cliente), endereco: String(s.endereco), servico: String(s.servico), valor: Number.isInteger(s.valor) ? s.valor : null,
+        pagamento: PAGAMENTOS[s.pagamento] ? s.pagamento : '', parcelas: s.pagamento === 'credito' ? (Number(s.parcelas) || 1) : null, criadoEm: s.criadoEm });
       novos++;
     }
     gravar(servicos);
@@ -291,7 +366,7 @@ limparForm();
 mesInput.value = mesAtual();
 render();
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+if (!nativo && 'serviceWorker' in navigator && location.protocol !== 'file:') {
   // Quando sair uma versão nova do app, recarrega uma vez para aplicá-la.
   const tinhaVersao = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -38,9 +38,23 @@
         <label>Serviço realizado
           <textarea id="servico" rows="3" required placeholder="Descreva o serviço"></textarea>
         </label>
-        <label>Valor (R$)
-          <input type="text" id="valor" inputmode="decimal" required placeholder="0,00">
+        <label>Valor (R$) <span class="opc">— opcional</span>
+          <input type="text" id="valor" inputmode="decimal" placeholder="0,00">
         </label>
+        <div class="row">
+          <label class="grow">Forma de pagamento <span class="opc">— opcional</span>
+            <select id="pagamento">
+              <option value="">Não informado</option>
+              <option value="pix">Pix</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="credito">Cartão de crédito</option>
+              <option value="debito">Cartão de débito</option>
+            </select>
+          </label>
+          <label id="boxParcelas" hidden>Parcelas
+            <select id="parcelas"></select>
+          </label>
+        </div>
         <div class="row">
           <button type="submit" class="btn primary" id="btnSalvar">Salvar</button>
           <button type="button" class="btn" id="btnCancelar" hidden>Cancelar</button>

@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.oliveiraronaldo.meusservicos",
+  "appName": "Meus Serviços",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#1f6feb"
+  }
+}

@@ -1,19 +1,33 @@
 # Meus Serviços
 
-App para celular que registra os serviços realizados (data, cliente, endereço, serviço e valor)
+App para celular que registra os serviços realizados (data, cliente, endereço, serviço, valor e forma de pagamento)
 e gera um **relatório mensal em PDF**. Funciona **100% offline**: os dados ficam salvos
 apenas no próprio celular, sem banco de dados externo e sem login.
 
 ## Funcionalidades
 - Cadastro de serviço com a **data de hoje já preenchida** (pode ser alterada).
-- Valor de cada serviço (aceita `150`, `150,50` ou `1.250,00`) e total do mês.
+- Valor (opcional, aceita `150`, `150,50` ou `1.250,00`) e total do mês.
+- Forma de pagamento (opcional): Pix, Dinheiro, Cartão de crédito (1x a 12x) ou Cartão de débito.
+- PDF com coluna de pagamento e resumo de totais por forma de pagamento.
 - Histórico por mês, com busca por cliente, endereço ou serviço.
 - Editar e excluir registros.
 - Autocompletar de clientes/endereços já usados (ao escolher um cliente, sugere o último endereço dele).
 - **Gerar PDF do mês** selecionado (no celular abre o menu de compartilhar: salvar, WhatsApp, e-mail...).
 - Backup: exportar/importar os dados em arquivo `.json` (menu ⋮).
 
-## Como instalar no celular
+## Instalar como app Android (APK) — recomendado
+1. No celular, abra https://github.com/oliveiraronaldo/AppServicos/releases/latest
+2. Toque em **MeusServicos.apk** para baixar e depois abra o arquivo.
+3. Se o Android pedir, permita **instalar apps desta fonte** (o navegador/Arquivos) e toque em **Instalar**.
+4. O app **Meus Serviços** aparece na lista de apps. Funciona sem internet.
+
+Para atualizar, baixe o APK mais novo e instale por cima: os dados são mantidos.
+O APK é gerado automaticamente pelo GitHub Actions (`.github/workflows/android.yml`) a cada alteração.
+
+> A chave de assinatura (`android-keystore/`) está no repositório para simplificar. Como o repositório
+> é público, para mais segurança dá para movê-la para um *secret* do GitHub.
+
+## Usar como PWA pelo navegador
 O app é um PWA (aplicativo web instalável). Ele precisa ser aberto **uma única vez** por um
 endereço `https` para ser instalado; depois disso funciona sem internet.
 
