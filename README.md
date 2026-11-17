@@ -35,4 +35,6 @@ e guarde o arquivo (Drive, WhatsApp para você mesmo, etc.).
 - `sw.js`, `manifest.webmanifest`, `icons/` — instalação e funcionamento offline
 - `vendor/` — jsPDF e jsPDF-AutoTable (licença MIT) para gerar o PDF localmente
 
+**Endereço do app:** https://oliveiraronaldo.github.io/AppServicos/
+
 Ao alterar arquivos do app, aumente a versão em `CACHE` no `sw.js` para o celular baixar a atualização.
