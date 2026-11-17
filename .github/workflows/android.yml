@@ -50,6 +50,13 @@ jobs:
           sed -i 's/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName "1.0"/versionName "1.${{ github.run_number }}"/' android/app/build.gradle
           grep -n "versionCode\|versionName" android/app/build.gradle
 
+      - name: Permissão de gravar em Documentos (backup automático, só Android 10 ou anterior)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#&\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />#' $M
+          sed -i 's#<application#<application\n        android:requestLegacyExternalStorage="true"#' $M
+          grep -n "EXTERNAL_STORAGE\|requestLegacy" $M
+
       - name: Chave de assinatura (vem dos Secrets do repositório)
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

@@ -58,9 +58,14 @@ resumo por forma de pagamento. O celular abre o menu de compartilhar: salve em *
 envie por WhatsApp/e-mail.
 
 ### Backup (importante!)
-Como os dados ficam só no aparelho, **desinstalar o app ou limpar os dados dele apaga os registros**.
-Faça backup com frequência:
+Como os dados ficam só no aparelho, **desinstalar o app ou limpar os dados dele apaga os registros**
+(limpar só o *cache* não apaga). Por isso existem duas proteções:
 
+- **Backup automático (app Android):** a cada alteração o app grava uma cópia em
+  `Documentos/MeusServicos/` no celular: `backup-automatico.json` (sempre o mais recente) e
+  `backup-AAAA-MM.json` (uma cópia por mês). Essa pasta **não é apagada** ao limpar os dados ou
+  desinstalar o app. Se o app abrir vazio e encontrar o backup automático, ele oferece restaurar.
+  O status aparece no menu **⋮**.
 - **⋮ → Exportar backup**: gera um arquivo `.json` com todos os serviços. Guarde-o no Drive, e-mail etc.
 - **⋮ → Importar backup**: restaura um arquivo de backup (serviços já existentes não são duplicados).
 
