@@ -334,6 +334,8 @@ $('btnExport').addEventListener('click', () => {
   salvarArquivo(blob, `backup-servicos-${hojeISO()}.json`, 'Backup Meus Serviços');
 });
 
+// No app instalado, alguns seletores do Android escondem .json; mostra todos os arquivos.
+if (nativo) $('fileImport').removeAttribute('accept');
 $('btnImport').addEventListener('click', () => $('fileImport').click());
 $('fileImport').addEventListener('change', async e => {
   const f = e.target.files[0];
