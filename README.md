@@ -1,11 +1,12 @@
 # Meus Serviços
 
-App para celular que registra os serviços realizados (data, cliente, endereço e serviço)
+App para celular que registra os serviços realizados (data, cliente, endereço, serviço e valor)
 e gera um **relatório mensal em PDF**. Funciona **100% offline**: os dados ficam salvos
 apenas no próprio celular, sem banco de dados externo e sem login.
 
 ## Funcionalidades
 - Cadastro de serviço com a **data de hoje já preenchida** (pode ser alterada).
+- Valor de cada serviço (aceita `150`, `150,50` ou `1.250,00`) e total do mês.
 - Histórico por mês, com busca por cliente, endereço ou serviço.
 - Editar e excluir registros.
 - Autocompletar de clientes/endereços já usados (ao escolher um cliente, sugere o último endereço dele).

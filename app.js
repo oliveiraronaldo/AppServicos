@@ -31,12 +31,22 @@ function nomeMes(ym) {
   const [a, m] = ym.split('-');
   return `${MESES[Number(m) - 1]} de ${a}`;
 }
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+// Valores guardados em centavos (inteiro) para não ter erro de arredondamento.
+const moeda = c => BRL.format((c || 0) / 100);
+function lerValor(txt) {
+  let t = String(txt).replace(/[R$\s]/g, '');
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+  return Math.round(parseFloat(t) * 100);
+}
+const somar = itens => itens.reduce((t, s) => t + (s.valor || 0), 0);
 const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 /* ===== Elementos ===== */
 const $ = id => document.getElementById(id);
 const form = $('form'), editId = $('editId');
-const fData = $('data'), fCliente = $('cliente'), fEndereco = $('endereco'), fServico = $('servico');
+const fData = $('data'), fCliente = $('cliente'), fEndereco = $('endereco'), fServico = $('servico'), fValor = $('valor');
 const mesInput = $('mes'), busca = $('busca'), lista = $('lista'), resumo = $('resumo');
 
 function toast(msg) {
@@ -64,7 +74,13 @@ form.addEventListener('submit', e => {
     cliente: fCliente.value.trim(),
     endereco: fEndereco.value.trim(),
     servico: fServico.value.trim(),
+    valor: lerValor(fValor.value),
   };
+  if (reg.valor === null) {
+    toast('Valor inválido. Ex.: 150 ou 150,50');
+    fValor.focus();
+    return;
+  }
   if (!reg.data || !reg.cliente || !reg.endereco || !reg.servico) return;
 
   if (editId.value) {
@@ -91,6 +107,7 @@ function editar(id) {
   fCliente.value = s.cliente;
   fEndereco.value = s.endereco;
   fServico.value = s.servico;
+  fValor.value = s.valor != null ? (s.valor / 100).toFixed(2).replace('.', ',') : '';
   $('formTitle').textContent = 'Editar serviço';
   $('btnSalvar').textContent = 'Atualizar';
   $('btnCancelar').hidden = false;
@@ -126,8 +143,8 @@ function render() {
     ? doMes.filter(s => `${s.cliente} ${s.endereco} ${s.servico}`.toLowerCase().includes(termo))
     : doMes;
 
-  resumo.textContent = `${nomeMes(ym)}: ${doMes.length} serviço(s)` +
-    (termo ? ` · ${filtrados.length} encontrado(s)` : '');
+  resumo.textContent = `${nomeMes(ym)}: ${doMes.length} serviço(s) · Total ${moeda(somar(doMes))}` +
+    (termo ? ` · ${filtrados.length} encontrado(s) (${moeda(somar(filtrados))})` : '');
 
   if (!filtrados.length) {
     lista.innerHTML = `<li class="vazio">Nenhum serviço ${termo ? 'encontrado' : 'neste mês'}.</li>`;
@@ -141,6 +158,7 @@ function render() {
         </div>
         <p class="item-end">📍 ${esc(s.endereco)}</p>
         <p class="item-serv">${esc(s.servico)}</p>
+        <p class="item-valor">${s.valor != null ? moeda(s.valor) : 'Sem valor'}</p>
         <div class="item-acoes">
           <button data-acao="editar" data-id="${s.id}">Editar</button>
           <button data-acao="excluir" data-id="${s.id}" class="del">Excluir</button>
@@ -189,16 +207,19 @@ $('btnPdf').addEventListener('click', () => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.text(nomeMes(ym), 14, 25);
-  doc.text(`Total de serviços: ${itens.length}`, W - 14, 25, { align: 'right' });
+  doc.text(`Serviços: ${itens.length}   ·   Total: ${moeda(somar(itens))}`, W - 14, 25, { align: 'right' });
 
   doc.autoTable({
     startY: 31,
-    head: [['Data', 'Cliente', 'Endereço', 'Serviço realizado']],
-    body: itens.map(s => [dataBR(s.data), s.cliente, s.endereco, s.servico]),
+    head: [['Data', 'Cliente', 'Endereço', 'Serviço realizado', 'Valor']],
+    body: itens.map(s => [dataBR(s.data), s.cliente, s.endereco, s.servico, s.valor != null ? moeda(s.valor) : '-']),
+    foot: [[{ content: 'TOTAL DO MÊS', colSpan: 4, styles: { halign: 'right' } }, moeda(somar(itens))]],
+    showFoot: 'lastPage',
+    footStyles: { fillColor: [31, 111, 235], textColor: 255, fontStyle: 'bold' },
     styles: { fontSize: 9, cellPadding: 2, valign: 'top', overflow: 'linebreak' },
     headStyles: { fillColor: [31, 111, 235], textColor: 255 },
     alternateRowStyles: { fillColor: [244, 246, 249] },
-    columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 38 }, 2: { cellWidth: 55 }, 3: { cellWidth: 'auto' } },
+    columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 34 }, 2: { cellWidth: 46 }, 3: { cellWidth: 'auto' }, 4: { cellWidth: 26, halign: 'right' } },
     margin: { left: 14, right: 14 },
     didDrawPage: () => {
       const H = doc.internal.pageSize.getHeight();
@@ -253,7 +274,7 @@ $('fileImport').addEventListener('change', async e => {
     let novos = 0;
     for (const s of validos) {
       if (s.id && ids.has(s.id)) continue; // não duplica
-      servicos.push({ id: s.id || novoId(), data: s.data, cliente: String(s.cliente), endereco: String(s.endereco), servico: String(s.servico), criadoEm: s.criadoEm });
+      servicos.push({ id: s.id || novoId(), data: s.data, cliente: String(s.cliente), endereco: String(s.endereco), servico: String(s.servico), valor: Number.isInteger(s.valor) ? s.valor : null, criadoEm: s.criadoEm });
       novos++;
     }
     gravar(servicos);
@@ -271,5 +292,14 @@ mesInput.value = mesAtual();
 render();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  // Quando sair uma versão nova do app, recarrega uma vez para aplicá-la.
+  const tinhaVersao = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (tinhaVersao && !location.hash.includes('atualizado')) {
+      location.hash = 'atualizado';
+      location.reload();
+    }
+  });
   navigator.serviceWorker.register('sw.js');
+  if (location.hash.includes('atualizado')) history.replaceState(null, '', location.pathname);
 }

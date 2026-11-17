@@ -1,5 +1,5 @@
 // Service worker: guarda todos os arquivos do app no celular para funcionar sem internet.
-const CACHE = 'meus-servicos-v1';
+const CACHE = 'meus-servicos-v2';
 const ARQUIVOS = [
   './',
   './index.html',
