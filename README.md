@@ -78,7 +78,7 @@ www/                     o app (HTML/CSS/JS puro, sem build)
   sw.js, manifest.webmanifest   PWA / funcionamento offline
   icons/                 ícones da versão web
   vendor/                jsPDF + jsPDF-AutoTable (MIT), geram o PDF localmente
-resources/android/       ícones do app Android e chave de assinatura do APK
+resources/android/       ícones do app Android
 capacitor.config.json    configuração do Capacitor (empacota www/ como app Android)
 .github/workflows/       gera o APK e publica em Releases a cada alteração
 docs/                    imagens deste README
@@ -105,7 +105,7 @@ Para gerar na sua máquina (requer Node 20, JDK 17 e Android SDK):
 npm install
 npx cap add android
 cp -r resources/android/res/* android/app/src/main/res/
-cd android && ./gradlew assembleDebug
+cd android && ./gradlew assembleDebug   # APK de teste, assinado com chave de debug
 ```
 
 ### Formato do backup
@@ -134,5 +134,7 @@ cd android && ./gradlew assembleDebug
 
 ### Observações
 - Ao alterar arquivos em `www/`, aumente a versão de `CACHE` em `www/sw.js` para a versão web se atualizar.
-- A chave de assinatura (`resources/android/meusservicos.keystore`) está no repositório para simplificar
-  o build. Ela precisa ser sempre a mesma, ou as atualizações do APK não instalam por cima.
+- O APK é assinado com uma chave guardada nos *Secrets* do repositório (`ANDROID_KEYSTORE_BASE64` e
+  `ANDROID_KEYSTORE_PASSWORD`, alias `meusservicos`). Ela precisa ser sempre a mesma, ou as atualizações
+  não instalam por cima do app já instalado. Quem fizer um fork precisa criar a própria chave
+  (`keytool -genkeypair -alias meusservicos ...`) e cadastrar esses dois Secrets.
