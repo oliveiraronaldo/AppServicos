@@ -3,7 +3,12 @@ name: Gerar APK Android
 on:
   push:
     branches: [ccr-a93aa7cb-mdt6kr]
-    paths-ignore: ['README.md']
+    paths:
+      - 'www/**'
+      - 'resources/**'
+      - 'capacitor.config.json'
+      - 'package*.json'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
 
 permissions:
@@ -33,14 +38,13 @@ jobs:
 
       - name: Criar projeto Android
         run: |
-          npm run www
           npx cap add android
           npx cap sync android
 
       - name: Ícone, cores e versão
         run: |
           R=android/app/src/main/res
-          cp -r android-res/* $R/
+          cp -r resources/android/res/* $R/
           sed -i 's/#FFFFFF/#1F6FEB/I' $R/values/ic_launcher_background.xml
           sed -i 's#@drawable/splash#@color/ic_launcher_background#' $R/values/styles.xml
           sed -i 's/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName "1.0"/versionName "1.${{ github.run_number }}"/' android/app/build.gradle
@@ -51,7 +55,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android-keystore/meusservicos.keystore \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/resources/android/meusservicos.keystore \
             -Pandroid.injected.signing.store.password=meusservicos \
             -Pandroid.injected.signing.key.alias=meusservicos \
             -Pandroid.injected.signing.key.password=meusservicos
@@ -64,4 +68,4 @@ jobs:
           gh release create "v1.${{ github.run_number }}" MeusServicos.apk \
             --target "${{ github.sha }}" --latest \
             --title "Meus Serviços 1.${{ github.run_number }}" \
-            --notes "Baixe o arquivo **MeusServicos.apk** abaixo no celular Android e instale."
+            --notes "Baixe o arquivo **MeusServicos.apk** abaixo no celular Android e instale. Para atualizar, instale por cima: os dados são mantidos."

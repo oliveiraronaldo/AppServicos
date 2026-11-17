@@ -2,10 +2,7 @@
   "name": "meus-servicos",
   "version": "1.0.0",
   "private": true,
-  "description": "App para registrar serviços realizados e gerar relatório mensal em PDF",
-  "scripts": {
-    "www": "rm -rf www && mkdir www && cp -r index.html styles.css app.js manifest.webmanifest vendor icons www/"
-  },
+  "description": "Registro de serviços realizados com relatório mensal em PDF — app Android (Capacitor) e PWA offline",
   "devDependencies": {
     "@capacitor/android": "6.2.1",
     "@capacitor/cli": "6.2.1",
