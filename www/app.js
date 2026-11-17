@@ -187,7 +187,6 @@ function render() {
         </div>
       </li>`).join('');
   }
-  atualizarSugestoes();
 }
 
 lista.addEventListener('click', e => {
@@ -199,12 +198,6 @@ lista.addEventListener('click', e => {
 mesInput.addEventListener('change', render);
 busca.addEventListener('input', render);
 
-// Autocompletar com clientes/endereços já usados
-function atualizarSugestoes() {
-  const unicos = campo => [...new Set(servicos.map(s => s[campo]))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  $('listaClientes').innerHTML = unicos('cliente').map(v => `<option value="${esc(v)}">`).join('');
-  $('listaEnderecos').innerHTML = unicos('endereco').map(v => `<option value="${esc(v)}">`).join('');
-}
 // Ao escolher um cliente conhecido, sugere o último endereço dele
 fCliente.addEventListener('change', () => {
   if (fEndereco.value) return;

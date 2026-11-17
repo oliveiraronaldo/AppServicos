@@ -41,8 +41,8 @@ Preencha os campos e toque em **Salvar**:
 | Campo | Observação |
 |---|---|
 | Data | Já vem com a data de hoje; pode ser alterada |
-| Nome do cliente | Sugere nomes já usados |
-| Endereço | Ao escolher um cliente já cadastrado, sugere o último endereço dele |
+| Nome do cliente | |
+| Endereço | Se o nome digitado for de um cliente já cadastrado, o último endereço dele é preenchido |
 | Serviço realizado | Descrição livre |
 | Valor (R$) | Opcional. Aceita `150`, `150,50` ou `1.250,00` |
 | Forma de pagamento | Opcional. Pix, Dinheiro, Cartão de crédito (1x a 12x) ou Cartão de débito |
